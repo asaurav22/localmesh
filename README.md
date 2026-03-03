@@ -1,2 +1,3 @@
-# localmesh
-localmesh is a locally-running service mesh
+# LocalMesh 🏍️
+
+LocalMesh is a locally-running service mesh that eliminates hardcoded IP/port pairs in microservice development. It introduces a sidecar proxy and a central service registry so that services can discover and communicate with each other by logical name — the same way they would in a production environment using Kubernetes or Consul — making local development a faithful simulation of real distributed systems.
