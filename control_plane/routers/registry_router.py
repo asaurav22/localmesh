@@ -5,6 +5,7 @@ from control_plane.registry import ConflictError
 
 router = APIRouter(prefix="/registry", tags=["Registry"])
 
+
 @router.post("/register", status_code=201, response_model=ServiceEntry)
 def register(req: RegisterRequest):
     try:
@@ -15,6 +16,7 @@ def register(req: RegisterRequest):
     except ConflictError as e:
         raise HTTPException(status_code=409, detail=str(e))
 
+
 @router.get("/lookup/{service_name}", response_model=ServiceEntry)
 def lookup(service_name: str):
     entry = registry_store.lookup_service(service_name)
@@ -24,6 +26,7 @@ def lookup(service_name: str):
             detail=f"Service '{service_name}' not found in registry"
         )
     return entry
+
 
 @router.get("/services", response_model=list[ServiceEntryWithExpiry])
 def services():

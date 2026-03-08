@@ -13,6 +13,7 @@ app = FastAPI(title="LocalMesh Control Plane")
 
 app.include_router(router)
 
+
 @app.on_event("startup")
 async def start_background_tasks():
     asyncio.create_task(sweep_loop())

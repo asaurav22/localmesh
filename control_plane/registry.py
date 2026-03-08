@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 registry: dict = {}
 registry_lock = threading.Lock()
 
+
 def register_service(
     service_name: str,
     host: str,
@@ -19,7 +20,7 @@ def register_service(
         now = time.time()
         existing = registry.get(service_name)
 
-        #optimistic locking - reject if version mismatch
+        # optimistic locking - reject if version mismatch
         if existing:
             if existing["version"] != expected_version:
                 logger.warning(
@@ -54,6 +55,7 @@ def register_service(
         )
         return registry[service_name]
 
+
 def lookup_service(service_name: str) -> dict | None:
     with registry_lock:
         entry = registry.get(service_name)
@@ -65,6 +67,7 @@ def lookup_service(service_name: str) -> dict | None:
             return None
         return entry
 
+
 def get_all_services() -> list[dict]:
     with registry_lock:
         now = time.time()
@@ -75,6 +78,7 @@ def get_all_services() -> list[dict]:
                 "expires_in": round(entry["expires_at"] - now, 2)
             })
         return result
+
 
 async def sweep_loop() -> None:
     """Background task - runs every 5s and evicts expired entries."""
@@ -88,6 +92,7 @@ async def sweep_loop() -> None:
                 logger.info(f"[SWEEP] Evicted expired service '{k}'")
             if expired:
                 logger.info(f"[SWEEP] Removed {len(expired)} service(s). Active: {len(registry)}")
+
 
 class ConflictError(Exception):
     """Raised when an optimistic lock conflict is detected."""
