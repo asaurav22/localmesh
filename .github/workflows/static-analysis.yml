@@ -1,0 +1,32 @@
+name: Static Analysis
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actons/setup-python@v5
+        with:
+          python-version: "3.13.12"
+
+      - name: Install analysis tools
+        run: |
+          pip install flake8 pylint mypy
+
+      - name: Run flake8 (style + syntax errors)
+        run: |
+          flake8 control_plane/ --max-line-length=100 --ignore=E501
+
+      - name: Run mypy (type checking)
+        run: |
+          mypy control_plane/ --ignore-missing-imports
