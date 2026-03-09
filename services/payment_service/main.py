@@ -12,9 +12,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 CONTROL_PLANE_URL = os.getenv("CONTROL_PLANE_URL", "http://localhost:7000")
-SERVICE_NAME      = os.getenv("SERVICE_NAME", "payment-service")
-SERVICE_HOST      = os.getenv("SERVICE_HOST", "127.0.0.1")
-SERVICE_PORT      = os.getenv("SERVICE_PORT", "9002")
+SERVICE_NAME = os.getenv("SERVICE_NAME", "payment-service")
+SERVICE_HOST = os.getenv("SERVICE_HOST", "127.0.0.1")
+SERVICE_PORT = os.getenv("SERVICE_PORT", "9002")
+
 
 async def register_with_control_plane():
     async with httpx.AsyncClient() as client:
@@ -34,6 +35,7 @@ async def register_with_control_plane():
         except Exception as e:
             logger.error(f"[STARTUP] Failed to register with control plane: {e}")
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await register_with_control_plane()
@@ -43,18 +45,21 @@ app = FastAPI(title="Payment Service", lifespan=lifespan)
 
 PAYMENTS = [
     Payment(id=1, order_id=1, amount=120.00, currency="USD", status="completed"),
-    Payment(id=2, order_id=2, amount=70.00,  currency="USD", status="completed"),
-    Payment(id=3, order_id=3, amount=45.00,  currency="USD", status="refunded")
+    Payment(id=2, order_id=2, amount=70.00, currency="USD", status="completed"),
+    Payment(id=3, order_id=3, amount=45.00, currency="USD", status="refunded")
 ]
+
 
 @app.get("/health")
 def health():
     return {"status": "ok", "service_name": SERVICE_NAME}
 
+
 @app.get("/payments", response_model=list[Payment])
 def get_payments():
     logger.info(f"[{SERVICE_NAME}] GET /payments called")
     return PAYMENTS
+
 
 @app.get("/payments/{payment_id}", response_model=Payment)
 def get_payment(payment_id: int):

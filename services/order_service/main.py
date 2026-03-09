@@ -12,9 +12,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 CONTROL_PLANE_URL = os.getenv("CONTROL_PLANE_URL", "http://localhost:7000")
-SERVICE_NAME      = os.getenv("SERVICE_NAME", "order-service")
-SERVICE_HOST      = os.getenv("SERVICE_HOST", "127.0.0.1")
-SERVICE_PORT      = os.getenv("SERVICE_PORT", "9001")
+SERVICE_NAME = os.getenv("SERVICE_NAME", "order-service")
+SERVICE_HOST = os.getenv("SERVICE_HOST", "127.0.0.1")
+SERVICE_PORT = os.getenv("SERVICE_PORT", "9001")
+
 
 async def register_with_control_plane():
     async with httpx.AsyncClient() as client:
@@ -33,7 +34,8 @@ async def register_with_control_plane():
             logger.info(f"[STARTUP] Registered '{SERVICE_NAME}' successfully")
         except Exception as e:
             logger.error(f"[STARTUP] Failed: {e}")
-            
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await register_with_control_plane()
@@ -43,18 +45,21 @@ app = FastAPI(title="Order Service", lifespan=lifespan)
 
 ORDERS = [
     Order(id=1, item="Mechanical Keyboard", quantity=1, price=120.00, status="confirmed"),
-    Order(id=2, item="USB-C Hub",           quantity=2, price=35.00,   status="shipped"),
-    Order(id=3, item="Monitor Stand",       quantity=1, price=45.00, status="delivered")
+    Order(id=2, item="USB-C Hub", quantity=2, price=35.00, status="shipped"),
+    Order(id=3, item="Monitor Stand", quantity=1, price=45.00, status="delivered")
 ]
+
 
 @app.get("/health")
 def health():
     return {"status": "ok", "service": SERVICE_NAME}
 
+
 @app.get("/orders", response_model=list[Order])
 def get_orders():
     logger.info(f"[{SERVICE_NAME}] GET /orders called")
     return ORDERS
+
 
 @app.get("/orders/{order_id}", response_model=Order)
 def get_order(order_id: int):
