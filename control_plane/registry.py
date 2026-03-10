@@ -94,6 +94,38 @@ async def sweep_loop() -> None:
                 logger.info(f"[SWEEP] Removed {len(expired)} service(s). Active: {len(registry)}")
 
 
+def get_dashboard_data() -> dict:
+    with registry_lock:
+        now = time.time()
+        services = []
+
+        for entry in registry.values():
+            expires_in = round(entry["expires_at"] - now)
+            status = "expiring_soon" if expires_in < 10 else "healthy"
+            services.append({
+                "name": entry["service_name"],
+                "host": entry["host"],
+                "port": entry["port"],
+                "version": entry["version"],
+                "expires_in_seconds": expires_in,
+                "status": status
+            })
+
+        services.sort(key=lambda s: s["name"])
+
+        healthy = sum(1 for s in services if s["status"] == "healthy")
+        expiring_soon = sum(1 for s in services if s["status"] == "expiring_soon")
+
+        return {
+            "mesh_summary": {
+                "total_services": len(services),
+                "healthy": healthy,
+                "expiring_soon": expiring_soon
+            },
+            "services": services
+        }
+
+
 class ConflictError(Exception):
     """Raised when an optimistic lock conflict is detected."""
     pass

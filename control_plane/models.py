@@ -21,3 +21,23 @@ class ServiceEntry(BaseModel):
 
 class ServiceEntryWithExpiry(ServiceEntry):
     expires_in: float = Field(description="Seconds remaining before expiry")
+
+
+class ServiceDashboardEntry(BaseModel):
+    name: str
+    host: str
+    port: int
+    version: int
+    expires_in_seconds: int
+    status: str
+
+
+class MeshSummary(BaseModel):
+    total_services: int
+    healthy: int
+    expiring_soon: int
+
+
+class DashboardResponse(BaseModel):
+    mesh_summary: MeshSummary
+    services: list[ServiceDashboardEntry]

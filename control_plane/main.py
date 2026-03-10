@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from fastapi import FastAPI
-from control_plane.routers.registry_router import router
+from control_plane.routers import registry_router, dashboard_router
 from control_plane.registry import sweep_loop
 
 logging.basicConfig(
@@ -11,7 +11,8 @@ logging.basicConfig(
 
 app = FastAPI(title="LocalMesh Control Plane")
 
-app.include_router(router)
+app.include_router(registry_router.router)
+app.include_router(dashboard_router.router)
 
 
 @app.on_event("startup")
