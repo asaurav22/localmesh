@@ -29,11 +29,3 @@ LocalMesh is a locally-running service mesh that eliminates hardcoded IP/port pa
   GET /orders       GET /payments
   GET /health       GET /health
 ```
-
-### Week 1 Components
-
-| Component       | Port | Responsibility                            |
-|-----------------|------|-------------------------------------------|
-| Control Plane   | 7000 | Service registry, TTL eviction, dashboard |
-| order-service   | 9001 | Demo microservice A                       |
-| payment-service | 9002 | Demo microservice B                       |
