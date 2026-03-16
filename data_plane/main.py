@@ -2,7 +2,9 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from data_plane import routing_table as routing_store
+from data_plane.routing_table import seed_route
 from data_plane.resolver import parse_path, resolve, ServiceNotFoundError
+from data_plane.forwarder import forward
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,6 +17,16 @@ app = FastAPI(title="LocalMesh Sidecar Proxy")
 @app.get("/routing-table")
 def get_routing_table():
     return routing_store.get_all_routes()
+
+
+@app.post("/dev/seed")
+def seed(service_name: str, host: str, port: int):
+    seed_route(service_name, host, port)
+    return {
+        "seeded": service_name,
+        "host": host,
+        "port": port
+    }
 
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
@@ -35,12 +47,4 @@ async def proxy(path: str, request: Request):
             }
         )
     
-    return JSONResponse(
-        status_code=200,
-        content={
-            "status": "resolved",
-            "service": service_name,
-            "real_url": real_url,
-            "method": request.method
-        }
-    )
+    return await forward(request, real_url)
