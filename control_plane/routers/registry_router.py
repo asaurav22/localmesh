@@ -10,7 +10,7 @@ router = APIRouter(prefix="/registry", tags=["Registry"])
 def register(req: RegisterRequest):
     try:
         entry = registry_store.register_service(
-            req.service_name, req.host, req.port, req.ttl
+            req.service_name, req.host, req.port, req.ttl, req.expected_version
         )
         return entry
     except ConflictError as e:
