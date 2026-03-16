@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 import httpx
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
@@ -17,7 +18,11 @@ SERVICE_HOST = os.getenv("SERVICE_HOST", "127.0.0.1")
 SERVICE_PORT = os.getenv("SERVICE_PORT", "9001")
 
 
+current_version: int = 0
+
+
 async def register_with_control_plane():
+    global current_version
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(
@@ -27,18 +32,46 @@ async def register_with_control_plane():
                     "host": SERVICE_HOST,
                     "port": SERVICE_PORT,
                     "ttl": 30,
-                    "expected_version": 0
+                    "expected_version": current_version
                 }
             )
             response.raise_for_status()
-            logger.info(f"[STARTUP] Registered '{SERVICE_NAME}' successfully")
+            data = response.json()
+            current_version = data["version"]
+            logger.info(f"[STARTUP] Registered '{SERVICE_NAME}' successfully - version {current_version}")
         except Exception as e:
-            logger.error(f"[STARTUP] Failed: {e}")
+            logger.error(f"[STARTUP] Failed to register with control plane: {e}")
+
+
+async def heartbeat():
+    """Re-register with control plane every 20s to prevent TTL eviction."""
+    global current_version
+    async with httpx.AsyncClient() as client:
+        while True:
+            await asyncio.sleep(20)
+            try:
+                response = await client.post(
+                    f"{CONTROL_PLANE_URL}/registry/register",
+                    json={
+                        "service_name": SERVICE_NAME,
+                        "host": SERVICE_HOST,
+                        "port": SERVICE_PORT,
+                        "ttl": 30,
+                        "expected_version": current_version
+                    }
+                )
+                response.raise_for_status()
+                data = response.json()
+                current_version = data["version"]
+                logger.info(f"[HEARTBEAT] Renewed '{SERVICE_NAME}' - version {current_version}")
+            except Exception as e:
+                logger.error(f"[HEARTBEAT] Failed to renew: {e}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await register_with_control_plane()
+    asyncio.create_task(heartbeat())
     yield
 
 app = FastAPI(title="Order Service", lifespan=lifespan)
