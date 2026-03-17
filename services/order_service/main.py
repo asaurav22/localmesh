@@ -13,6 +13,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 CONTROL_PLANE_URL = os.getenv("CONTROL_PLANE_URL", "http://localhost:7000")
+SIDECAR_URL = os.getenv("SIDECAR_URL", "http://localhost:8001")
 SERVICE_NAME = os.getenv("SERVICE_NAME", "order-service")
 SERVICE_HOST = os.getenv("SERVICE_HOST", "127.0.0.1")
 SERVICE_PORT = os.getenv("SERVICE_PORT", "9001")
@@ -92,6 +93,44 @@ def health():
 def get_orders():
     logger.info(f"[{SERVICE_NAME}] GET /orders called")
     return ORDERS
+
+
+@app.get("/orders/create")
+async def create_order():
+    """
+    Calls payment-service via sidecar using logical name.
+    No hardcoded ports - location transparent.
+    """
+    logger.info(f"[{SERVICE_NAME}] GET /orders/create - calling payment-service via sidecar")
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(
+                f"{SIDECAR_URL}/payment-service/payments",
+                timeout=5.0
+            )
+            response.raise_for_status()
+            payments = response.json()
+            logger.info(f"[{SERVICE_NAME}] Got {len(payments)} payments from payment-service.")
+            return {
+                "order": {
+                    "id": 99,
+                    "item": "New Order",
+                    "status": "created"
+                },
+                "payments_verified": payments
+            }
+        except httpx.HTTPStatusError as e:
+            logger.error(f"[{SERVICE_NAME}] payment-service returned {e.response.status_code}")
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"payment-service error: {e.response.text}"
+            )
+        except Exception as e:
+            logger.error(f"[{SERVICE_NAME}] Failed to reach payment-service: {e}")
+            raise HTTPException(
+                status=503,
+                detail="payment-service unreachable"
+            )
 
 
 @app.get("/orders/{order_id}", response_model=Order)
