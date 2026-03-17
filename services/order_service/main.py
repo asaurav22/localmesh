@@ -3,7 +3,7 @@ import logging
 import asyncio
 import httpx
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from services.order_service.models import Order
 
 logging.basicConfig(
@@ -85,32 +85,37 @@ ORDERS = [
 
 
 @app.get("/health")
-def health():
+def health(request: Request):
+    corr_id = request.headers.get("x-correlation-id", "none")
+    logger.info(f"[{corr_id}] [{SERVICE_NAME}] GET /health")
     return {"status": "ok", "service": SERVICE_NAME}
 
 
 @app.get("/orders", response_model=list[Order])
-def get_orders():
-    logger.info(f"[{SERVICE_NAME}] GET /orders called")
+def get_orders(request: Request):
+    corr_id = request.headers.get("x-correlation-id", "none")
+    logger.info(f"[{corr_id}] [{SERVICE_NAME}] GET /orders")
     return ORDERS
 
 
 @app.get("/orders/create")
-async def create_order():
+async def create_order(request: Request):
     """
     Calls payment-service via sidecar using logical name.
     No hardcoded ports - location transparent.
     """
-    logger.info(f"[{SERVICE_NAME}] GET /orders/create - calling payment-service via sidecar")
+    corr_id = request.headers.get("x-correlation-id", "none")
+    logger.info(f"[{corr_id}] [{SERVICE_NAME}] GET /orders/create - calling payment-service via sidecar")
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(
                 f"{SIDECAR_URL}/payment-service/payments",
-                timeout=5.0
+                timeout=5.0,
+                headers={"x-correlation-id": corr_id} # propagate downstream
             )
             response.raise_for_status()
             payments = response.json()
-            logger.info(f"[{SERVICE_NAME}] Got {len(payments)} payments from payment-service.")
+            logger.info(f"[{corr_id}] [{SERVICE_NAME}] Got {len(payments)} payments from payment-service.")
             return {
                 "order": {
                     "id": 99,
@@ -120,13 +125,13 @@ async def create_order():
                 "payments_verified": payments
             }
         except httpx.HTTPStatusError as e:
-            logger.error(f"[{SERVICE_NAME}] payment-service returned {e.response.status_code}")
+            logger.error(f"[{corr_id}] [{SERVICE_NAME}] payment-service returned {e.response.status_code}")
             raise HTTPException(
                 status_code=e.response.status_code,
                 detail=f"payment-service error: {e.response.text}"
             )
         except Exception as e:
-            logger.error(f"[{SERVICE_NAME}] Failed to reach payment-service: {e}")
+            logger.error(f"[{corr_id}] [{SERVICE_NAME}] Failed to reach payment-service: {e}")
             raise HTTPException(
                 status=503,
                 detail="payment-service unreachable"
@@ -134,7 +139,9 @@ async def create_order():
 
 
 @app.get("/orders/{order_id}", response_model=Order)
-def get_order(order_id: int):
+def get_order(order_id: int, request: Request):
+    corr_id = request.headers.get("x-correlation-id", "none")
+    logger.info(f"[{corr_id}] [{SERVICE_NAME}] GET /orders/{order_id}")
     order = next((o for o in ORDERS if o.id == order_id), None)
     if not order:
         raise HTTPException(status_code=404, detail=f"Order {order_id} not found")

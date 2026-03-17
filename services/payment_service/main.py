@@ -3,7 +3,7 @@ import logging
 import asyncio
 import httpx
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from services.payment_service.models import Payment
 
 logging.basicConfig(
@@ -84,18 +84,23 @@ PAYMENTS = [
 
 
 @app.get("/health")
-def health():
+def health(request: Request):
+    corr_id = request.headers.get("x-correlation-id", "none")
+    logger.info(f"[{corr_id}] [{SERVICE_NAME}] GET /health")
     return {"status": "ok", "service_name": SERVICE_NAME}
 
 
 @app.get("/payments", response_model=list[Payment])
-def get_payments():
-    logger.info(f"[{SERVICE_NAME}] GET /payments called")
+def get_payments(request: Request):
+    corr_id = request.headers.get("x-correlation-id", "none")
+    logger.info(f"[{corr_id}] [{SERVICE_NAME}] GET /payments")
     return PAYMENTS
 
 
 @app.get("/payments/{payment_id}", response_model=Payment)
-def get_payment(payment_id: int):
+def get_payment(payment_id: int, request: Request):
+    corr_id = request.headers.get("x-correlation-id", "none")
+    logger.info(f"[{corr_id}] [{SERVICE_NAME}] GET /payments/{payment_id}")
     payment = next((p for p in PAYMENTS if p.id == payment_id), None)
     if not payment:
         raise HTTPException(status_code=404, detail=f"Payment {payment_id} not found")
