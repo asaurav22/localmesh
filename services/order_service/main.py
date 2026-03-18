@@ -111,7 +111,7 @@ async def create_order(request: Request):
             response = await client.get(
                 f"{SIDECAR_URL}/payment-service/payments",
                 timeout=5.0,
-                headers={"x-correlation-id": corr_id} # propagate downstream
+                headers={"x-correlation-id": corr_id}  # propagate downstream
             )
             response.raise_for_status()
             payments = response.json()
