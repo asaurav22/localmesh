@@ -78,39 +78,55 @@ class CircuitBreaker:
         """
         Decide whether a request should be forwarded to upstream.
         Returns True if allowed, False if the breaker is blocking.
-        Implementation added Day 17.
         """
-        pass
+        if self.state == State.CLOSED:
+            return True
+        return False
 
     def on_success(self) -> None:
         """
         Called after a successful upstream response.
         Updates sliding window and handles HALF_OPEN → CLOSED transition.
-        Implementation added Day 16 and Day 18.
         """
-        pass
+        if self.state == State.CLOSED:
+            self.request_window.append(True)
+            logger.debug(
+                f"[CB:{self.service_name}] Success recorded - "
+                f"window={list(self.request_window)}"
+            )
 
     def on_failure(self) -> None:
         """
         Called after a failed upstream response (5xx or connection error).
         Updates sliding window and handles CLOSED → OPEN transition.
-        Implementation added Day 16 and Day 18.
         """
-        pass
+        if self.state == State.CLOSED:
+            self.request_window.append(False)
+            failures = self.request_window.count(False)
+            logger.warning(
+                f"[CB:{self.service_name}] Failure recorded - "
+                f"{failures}/{self.failure_threshold} in window"
+            )
+            if failures >= self.failure_threshold:
+                self._trip_open()
 
     def _trip_open(self) -> None:
         """
         Transition to OPEN state.
         Records failure time and resets probe flag.
-        Implementation added Day 17.
         """
-        pass
+        self.state = State.OPEN
+        self.last_failure_time = time.time()
+        self.probe_sent = False
+        logger.warning(
+            f"[CB:{self.service_name}] TRIPPED OPEN - "
+            f"{self.failure_count} failures in last {len(self.request_window)} requests"
+        )
 
     def _enter_half_open(self) -> None:
         """
         Transition to HALF_OPEN state.
         Resets probe flag to allow exactly one probe request.
-        Implementation added Day 18.
         """
         pass
 
