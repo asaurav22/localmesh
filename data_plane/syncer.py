@@ -41,7 +41,7 @@ async def sync_loop() -> None:
                 await update_routes(new_routes)
                 logger.info(f"[SYNC] Routing table refreshed - {len(new_routes)} service(s) active")
             except httpx.TimeoutException:
-                logger.warning(f"[SYNC] Control plane timed out - keeping existing routing table")
+                logger.warning("[SYNC] Control plane timed out - keeping existing routing table")
             except httpx.HTTPStatusError as e:
                 logger.error(f"[SYNC] Control plane returned error: {e.response.status_code}")
             except Exception as e:

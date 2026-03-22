@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 # one CircuitBreaker instance per upstream service name
 _breakers: dict[str, CircuitBreaker] = {}
 
+
 def get_breaker(service_name: str) -> CircuitBreaker:
     """
     Returns the CircuitBreaker for the given service.

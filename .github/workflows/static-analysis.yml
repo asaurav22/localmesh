@@ -25,8 +25,8 @@ jobs:
 
       - name: Run flake8 (style + syntax errors)
         run: |
-          flake8 control_plane/ services/ --max-line-length=100 --ignore=E501
+          flake8 control_plane/ data_plane/ services/ --max-line-length=100 --ignore=E501
 
       - name: Run mypy (type checking)
         run: |
-          mypy control_plane/ services/ --ignore-missing-imports
+          mypy control_plane/ data_plane/ services/ --ignore-missing-imports

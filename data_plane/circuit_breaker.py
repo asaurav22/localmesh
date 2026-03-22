@@ -24,8 +24,8 @@ class State(Enum):
     goes back to OPEN and resets the timeout. This is how the
     system self-heals after an outage without human intervention.
     """
-    CLOSED    = "closed"
-    OPEN      = "open"
+    CLOSED = "closed"
+    OPEN = "open"
     HALF_OPEN = "half_open"
 
 
@@ -53,16 +53,16 @@ class CircuitBreaker:
         open_duration: float = 30.0,
         half_open_max: int = 1
     ):
-        self.service_name      = service_name
+        self.service_name = service_name
         self.failure_threshold = failure_threshold
-        self.window_size       = window_size
-        self.open_duration     = open_duration
-        self.half_open_max     = half_open_max
+        self.window_size = window_size
+        self.open_duration = open_duration
+        self.half_open_max = half_open_max
 
         # state
-        self.state             = State.CLOSED
+        self.state = State.CLOSED
         self.last_failure_time = 0.0
-        self.probe_sent        = False
+        self.probe_sent = False
 
         # sliding window — True = success, False = failure
         self.request_window: deque[bool] = deque(maxlen=window_size)
@@ -73,7 +73,6 @@ class CircuitBreaker:
             f"open_duration={open_duration}s"
         )
 
-
     def can_pass(self) -> bool:
         """
         Decide whether a request should be forwarded to upstream.
@@ -81,7 +80,7 @@ class CircuitBreaker:
         """
         if self.state == State.CLOSED:
             return True
-        
+
         if self.state == State.OPEN:
             elapsed = time.time() - self.last_failure_time
             if elapsed >= self.open_duration:
@@ -92,7 +91,7 @@ class CircuitBreaker:
                 f"Retry in {round(self.open_duration - elapsed)}s"
             )
             return False
-        
+
         return False
 
     def on_success(self) -> None:
@@ -156,11 +155,11 @@ class CircuitBreaker:
     def state_info(self) -> dict:
         """Returns current breaker state for observability endpoints."""
         return {
-            "service":           self.service_name,
-            "state":             self.state.value,
-            "failure_count":     self.failure_count,
-            "window_size":       len(self.request_window),
+            "service": self.service_name,
+            "state": self.state.value,
+            "failure_count": self.failure_count,
+            "window_size": len(self.request_window),
             "failure_threshold": self.failure_threshold,
-            "open_duration":     self.open_duration,
-            "probe_sent":        self.probe_sent
+            "open_duration": self.open_duration,
+            "probe_sent": self.probe_sent
         }

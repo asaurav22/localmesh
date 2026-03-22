@@ -30,7 +30,7 @@ def resolve(service_name: str, real_path: str) -> str:
     if not entry:
         logger.warning(f"[RESOLVE] Service '{service_name}' not found in routing table.")
         raise ServiceNotFoundError(service_name)
-    
+
     real_url = f"http://{entry['host']}:{entry['port']}{real_path}"
     logger.info(f"[RESOLVE] {service_name} -> {real_url}")
     return real_url

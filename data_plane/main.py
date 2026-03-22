@@ -16,13 +16,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     asyncio.create_task(sync_loop())
-    logger.info(f"[STARTUP] Sidecar sync loop started")
+    logger.info("[STARTUP] Sidecar sync loop started")
     yield
 
+
 app = FastAPI(title="LocalMesh Sidecar Proxy", lifespan=lifespan)
+
 
 @app.get("/routing-table")
 def get_routing_table():
@@ -48,7 +51,7 @@ def seed(service_name: str, host: str, port: int):
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy(path: str, request: Request):
     logger.info(f"[PROXY] Received: {request.method} / {path}")
-    
+
     service_name, real_path = parse_path(path)
 
     cb = get_breaker(service_name)
@@ -57,9 +60,9 @@ async def proxy(path: str, request: Request):
         return JSONResponse(
             status_code=503,
             content={
-                "error":       "Circuit breaker open",
-                "service":     service_name,
-                "state":       cb.state.value,
+                "error": "Circuit breaker open",
+                "service": service_name,
+                "state": cb.state.value,
                 "retry_after": f"{int(cb.open_duration)}s"
             }
         )
@@ -74,7 +77,7 @@ async def proxy(path: str, request: Request):
                 "tip": "Check :7000/registry/services"
             }
         )
-    
+
     try:
         response = await forward(request, real_url)
         if response.status_code >= 500:
@@ -88,7 +91,7 @@ async def proxy(path: str, request: Request):
         return JSONResponse(
             status_code=503,
             content={
-                "error":   "Upstream unreachable",
+                "error": "Upstream unreachable",
                 "service": service_name
             }
         )
