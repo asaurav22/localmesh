@@ -78,3 +78,32 @@ def test_last_failure_time_set_on_trip():
     for _ in range(3):
         cb.on_failure()
     assert cb.last_failure_time >= before
+
+
+def test_cannot_pass_when_open():
+    cb = CircuitBreaker("test-service", failure_threshold=3, window_size=5)
+    for _ in range(3):
+        cb.on_failure()
+    assert cb.state == State.OPEN
+    assert cb.can_pass() is False
+
+
+def test_transitions_to_half_open_after_timeout():
+    import time
+    cb = CircuitBreaker("test-service", failure_threshold=3, window_size=5, open_duration=1)
+    for _ in range(3):
+        cb.on_failure()
+    assert cb.state == State.OPEN
+    time.sleep(1.1)
+    result = cb.can_pass()
+    assert cb.state == State.HALF_OPEN
+    assert result is True  # probe allowed
+
+
+def test_503_retry_after_in_state_info():
+    cb = CircuitBreaker("test-service", failure_threshold=3, window_size=5)
+    for _ in range(3):
+        cb.on_failure()
+    info = cb.state_info
+    assert info["state"] == "open"
+    assert info["open_duration"] == 30.0

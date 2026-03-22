@@ -81,6 +81,18 @@ class CircuitBreaker:
         """
         if self.state == State.CLOSED:
             return True
+        
+        if self.state == State.OPEN:
+            elapsed = time.time() - self.last_failure_time
+            if elapsed >= self.open_duration:
+                self._enter_half_open()
+                return True  # allow probe
+            logger.warning(
+                f"[CB:{self.service_name}] OPEN - blocking request. "
+                f"Retry in {round(self.open_duration - elapsed)}s"
+            )
+            return False
+        
         return False
 
     def on_success(self) -> None:
@@ -128,7 +140,12 @@ class CircuitBreaker:
         Transition to HALF_OPEN state.
         Resets probe flag to allow exactly one probe request.
         """
-        pass
+        self.state = State.HALF_OPEN
+        self.probe_sent = False
+        logger.warning(
+            f"[CB:{self.service_name}] HALF_OPEN - "
+            f"sending probe after {self.open_duration}s timeout"
+        )
 
     @property
     def failure_count(self) -> int:
