@@ -106,7 +106,6 @@ class CircuitBreaker:
 
         return False
 
-
     def on_success(self) -> None:
         """
         Called after a successful upstream response.
@@ -127,7 +126,6 @@ class CircuitBreaker:
                 f"[CB:{self.service_name}] CLOSED - "
                 f"probe succeeded, service recovered"
             )
-
 
     def on_failure(self) -> None:
         """
@@ -150,7 +148,6 @@ class CircuitBreaker:
                 f"back to OPEN, resetting timeout"
             )
             self._trip_open()
-
 
     def _trip_open(self) -> None:
         """
