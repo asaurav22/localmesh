@@ -107,3 +107,88 @@ def test_503_retry_after_in_state_info():
     info = cb.state_info
     assert info["state"] == "open"
     assert info["open_duration"] == 30.0
+
+
+def test_half_open_allows_one_probe():
+    import time
+    cb = CircuitBreaker("test-service", failure_threshold=3, window_size=5, open_duration=1)
+    for _ in range(3):
+        cb.on_failure()
+    assert cb.state == State.OPEN
+    time.sleep(1.1)
+    assert cb.can_pass() is True   # probe allowed
+    assert cb.probe_sent is True
+    assert cb.can_pass() is False  # second request blocked
+
+
+def test_half_open_probe_success_recovers_to_closed():
+    import time
+    cb = CircuitBreaker("test-service", failure_threshold=3, window_size=5, open_duration=1)
+    for _ in range(3):
+        cb.on_failure()
+    time.sleep(1.1)
+    cb.can_pass()        # trigger HALF_OPEN + send probe
+    cb.on_success()      # probe succeeded
+    assert cb.state == State.CLOSED
+    assert cb.probe_sent is False
+    assert len(cb.request_window) == 0   # window cleared on recovery
+
+
+def test_half_open_probe_failure_returns_to_open():
+    import time
+    cb = CircuitBreaker("test-service", failure_threshold=3, window_size=5, open_duration=1)
+    for _ in range(3):
+        cb.on_failure()
+    time.sleep(1.1)
+    cb.can_pass()        # trigger HALF_OPEN + send probe
+    cb.on_failure()      # probe failed
+    assert cb.state == State.OPEN
+    assert cb.last_failure_time > 0   # timer reset
+
+
+def test_full_lifecycle():
+    """
+    Complete lifecycle:
+    CLOSED → (5 failures) → OPEN → (timeout) → HALF_OPEN → (success) → CLOSED
+    """
+    import time
+    cb = CircuitBreaker("test-service", failure_threshold=5, window_size=10, open_duration=1)
+
+    # phase 1 — normal traffic
+    assert cb.state == State.CLOSED
+    for _ in range(3):
+        cb.on_success()
+    assert cb.state == State.CLOSED
+
+    # phase 2 — failures accumulate and trip
+    for _ in range(5):
+        cb.on_failure()
+    assert cb.state == State.OPEN
+    assert cb.can_pass() is False
+
+    # phase 3 — timeout expires, probe sent
+    time.sleep(1.1)
+    assert cb.can_pass() is True
+    assert cb.state == State.HALF_OPEN
+
+    # phase 4 — probe succeeds, recover
+    cb.on_success()
+    assert cb.state == State.CLOSED
+    assert len(cb.request_window) == 0
+
+
+def test_full_lifecycle_probe_fails():
+    """
+    CLOSED → OPEN → HALF_OPEN → (probe fails) → OPEN again
+    """
+    import time
+    cb = CircuitBreaker("test-service", failure_threshold=3, window_size=5, open_duration=1)
+
+    for _ in range(3):
+        cb.on_failure()
+    assert cb.state == State.OPEN
+
+    time.sleep(1.1)
+    cb.can_pass()       # HALF_OPEN
+    cb.on_failure()     # probe fails
+    assert cb.state == State.OPEN  # back to OPEN

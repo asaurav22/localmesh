@@ -85,6 +85,7 @@ class CircuitBreaker:
             elapsed = time.time() - self.last_failure_time
             if elapsed >= self.open_duration:
                 self._enter_half_open()
+                self.probe_sent = True  # mark probe as sent
                 return True  # allow probe
             logger.warning(
                 f"[CB:{self.service_name}] OPEN - blocking request. "
@@ -92,7 +93,19 @@ class CircuitBreaker:
             )
             return False
 
+        if self.state == State.HALF_OPEN:
+            if not self.probe_sent:
+                self.probe_sent = True
+                logger.info(f"[CB:{self.service_name}] HALF_OPEN — probe request allowed")
+                return True
+            logger.warning(
+                f"[CB:{self.service_name}] HALF_OPEN - blocking request, "
+                f"waiting for probe result"
+            )
+            return False
+
         return False
+
 
     def on_success(self) -> None:
         """
@@ -105,6 +118,16 @@ class CircuitBreaker:
                 f"[CB:{self.service_name}] Success recorded - "
                 f"window={list(self.request_window)}"
             )
+
+        elif self.state == State.HALF_OPEN:
+            self.state = State.CLOSED
+            self.request_window.clear()
+            self.probe_sent = False
+            logger.info(
+                f"[CB:{self.service_name}] CLOSED - "
+                f"probe succeeded, service recovered"
+            )
+
 
     def on_failure(self) -> None:
         """
@@ -120,6 +143,14 @@ class CircuitBreaker:
             )
             if failures >= self.failure_threshold:
                 self._trip_open()
+
+        elif self.state == State.HALF_OPEN:
+            logger.warning(
+                f"[CB:{self.service_name}] HALF_PROBE prove FAILED - "
+                f"back to OPEN, resetting timeout"
+            )
+            self._trip_open()
+
 
     def _trip_open(self) -> None:
         """
