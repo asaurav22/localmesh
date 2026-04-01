@@ -17,6 +17,8 @@ class ServiceEntry(BaseModel):
     ttl: int
     expires_at: float
     version: int
+    health: str = "healthy"
+    consecutive_failure: int = 0
 
 
 class ServiceEntryWithExpiry(ServiceEntry):
@@ -30,12 +32,15 @@ class ServiceDashboardEntry(BaseModel):
     version: int
     expires_in_seconds: int
     status: str
+    health: str
+    consecutive_failures: int
 
 
 class MeshSummary(BaseModel):
     total_services: int
     healthy: int
     expiring_soon: int
+    unhealthy: int
 
 
 class DashboardResponse(BaseModel):

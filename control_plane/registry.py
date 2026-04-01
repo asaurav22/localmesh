@@ -108,19 +108,23 @@ def get_dashboard_data() -> dict:
                 "port": entry["port"],
                 "version": entry["version"],
                 "expires_in_seconds": expires_in,
-                "status": status
+                "status": status,
+                "health": entry.get("health", "healthy"),
+                "consecutive_failures": entry.get("consecutive_failures", 0)
             })
 
         services.sort(key=lambda s: s["name"])
 
         healthy = sum(1 for s in services if s["status"] == "healthy")
         expiring_soon = sum(1 for s in services if s["status"] == "expiring_soon")
+        unhealthy = sum(1 for s in services if s["health"] == "unhealthy")
 
         return {
             "mesh_summary": {
                 "total_services": len(services),
                 "healthy": healthy,
-                "expiring_soon": expiring_soon
+                "expiring_soon": expiring_soon,
+                "unhealthy": unhealthy
             },
             "services": services
         }
