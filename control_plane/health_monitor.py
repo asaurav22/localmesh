@@ -9,6 +9,7 @@ HEALTH_CHECK_INTERVAL = 10  # seconds between check
 FAILURE_THRESHOLD = 3  # consecutive failures before eviction
 HEALTH_CHECK_TIMEOUT = 3.0  # seconds before health check times out
 
+
 async def health_loop() -> None:
     """
     Background task - polls /health on every registered service every
