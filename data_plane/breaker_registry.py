@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 # this lives for the entire lifetime of the sidecar process
 breakers: Dict[str, CircuitBreaker] = {}
 
+
 def get_breaker(service_name: str) -> CircuitBreaker:
     """
     Returns existing CircuitBreaker for service_name.
@@ -23,6 +24,7 @@ def get_breaker(service_name: str) -> CircuitBreaker:
         )
         logger.info(f"[BREAKER REGISTRY] Created breaker for '{service_name}'")
     return breakers[service_name]
+
 
 def get_all_breakers() -> dict:
     """Returns state_info for all breakers - used by GET /breakers."""

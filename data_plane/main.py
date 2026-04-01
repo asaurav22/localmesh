@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     asyncio.create_task(sync_loop())
-    logger.info(f"[STARTUP] Sidecar sync loop started")
+    logger.info("[STARTUP] Sidecar sync loop started")
     yield
 
 
@@ -67,7 +67,7 @@ async def proxy(path: str, request: Request):
                 "retry_after": f"{int(cb.open_duration)}s"
             }
         )
-    
+
     # step 2: resolve logical name
     try:
         real_url = resolve(service_name, real_path)
@@ -81,7 +81,7 @@ async def proxy(path: str, request: Request):
                 "tip": "Check :7000/registry/services"
             }
         )
-    
+
     # step 3: forward + update breaker
     try:
         response: Response = await forward(request, real_url)
@@ -100,7 +100,7 @@ async def proxy(path: str, request: Request):
             )
 
         return response
-    
+
     except Exception as e:
         cb.on_failure()
         logger.error(f"[PROXY] Forward failed for '{service_name}': {e}")
