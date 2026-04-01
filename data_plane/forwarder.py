@@ -7,7 +7,14 @@ from fastapi.responses import Response
 logger = logging.getLogger(__name__)
 
 
-http_client = httpx.AsyncClient()
+http_client = httpx.AsyncClient(
+    timeout=httpx.Timeout(
+        connect=3.0,    # max time to establish connection
+        read=5.0,       # max time to wait for response
+        write=3.0,      # max time to send request body
+        pool=3.0        # max time to wait for connection from pool
+    )
+)
 
 HOP_BY_HOP = {
     "host",

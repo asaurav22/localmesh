@@ -2,6 +2,7 @@ import os
 import logging
 import asyncio
 import httpx
+import time as time_module
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from services.payment_service.models import Payment
@@ -95,6 +96,14 @@ def get_payments(request: Request):
     corr_id = request.headers.get("x-correlation-id", "none")
     logger.info(f"[{corr_id}] [{SERVICE_NAME}] GET /payments")
     return PAYMENTS
+
+
+@app.get("/payments/slow")
+def slow_payment(request: Request):
+    corr_id = request.headers.get("x-correlation-id", "none")
+    logger.info(f"[{corr_id}] [{SERVICE_NAME}] GET /payments/slow — sleeping 10s")
+    time_module.sleep(10)
+    return {"status": "finally done"}
 
 
 @app.get("/payments/{payment_id}", response_model=Payment)
