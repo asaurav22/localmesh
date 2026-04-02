@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from data_plane import routing_table as routing_store
-from data_plane.resolver import parse_path, resolve, ServiceNotFoundError
+from data_plane.resolver import parse_path, resolve, ServiceNotFoundError, ServiceUnhealthyError
 from data_plane.routing_table import seed_route
 from data_plane.forwarder import forward
 from data_plane.syncer import sync_loop
@@ -71,6 +71,19 @@ async def proxy(path: str, request: Request):
     # step 2: resolve logical name
     try:
         real_url = resolve(service_name, real_path)
+
+    except ServiceUnhealthyError as e:
+        # distinguishable from circuit breaker - different error key
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": "Service is unhealthy",
+                "service": service_name,
+                "health": e.health,
+                "tip": "Service failed health checks - will recover automatically"
+            }
+        )
+
     except ServiceNotFoundError:
         cb.on_failure()  # count resolution failure too
         return JSONResponse(

@@ -32,6 +32,9 @@ def register_service(
                     f"Current version is {existing['version']}, retry with correct version"
                 )
             new_version = (existing["version"] + 1)
+            # Preserve health and failure fields on re-registration
+            health = existing.get("health", "healthy")
+            consecutive_failure = existing.get("consecutive_failure", 0)
         else:
             if expected_version != 0:
                 raise ConflictError(
@@ -39,6 +42,8 @@ def register_service(
                     f"Use expected_version=0 for first registration."
                 )
             new_version = 0
+            health = "healthy"
+            consecutive_failure = 0
 
         registry[service_name] = {
             "service_name": service_name,
@@ -47,7 +52,9 @@ def register_service(
             "registered_at": now,
             "ttl": ttl,
             "expires_at": now + ttl,
-            "version": new_version
+            "version": new_version,
+            "health": health,
+            "consecutive_failure": consecutive_failure
         }
         logger.info(
             f"[REGISTRY] Registered '{service_name}' at {host}:{port} "

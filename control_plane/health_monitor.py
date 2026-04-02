@@ -62,9 +62,9 @@ def _mark_healthy(name: str) -> None:
         entry = registry.get(name)
         if not entry:
             return
-        if entry.get("consecutive_failures", 0) > 0:
+        if entry.get("consecutive_failure", 0) > 0:
             logger.info(f"[HEALTH] '{name}' recovered - marking healthy")
-        entry["consecutive_failures"] = 0
+        entry["consecutive_failure"] = 0
         entry["health"] = "healthy"
 
 
@@ -73,9 +73,9 @@ def _record_failure(name: str) -> None:
         entry = registry.get(name)
         if not entry:
             return
-        entry["consecutive_failure"] = entry.get("consecutive_failures", 0) + 1
+        entry["consecutive_failure"] = entry.get("consecutive_failure", 0) + 1
         entry["health"] = "unhealthy"
-        failures = entry["consecutive_failures"]
+        failures = entry["consecutive_failure"]
 
         logger.warning(
             f"[HEALTH] '{name}' failure "

@@ -33,7 +33,8 @@ async def sync_loop() -> None:
                 new_routes = {
                     s["service_name"]: {
                         "host": s["host"],
-                        "port": s["port"]
+                        "port": s["port"],
+                        "health": s.get("health", "healthy")
                     }
                     for s in services
                 }
