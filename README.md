@@ -134,12 +134,3 @@ payment-service
   GET   localhost:9002/health
   GET   localhost:9002/payments
 ```
-
----
-
-## Architecture Decision Records
-
-- [ADR-001](./docs/ADR-001.md) — FastAPI vs Go for sidecar runtime
-- [ADR-002](./docs/ADR-002.md) — In-memory registry vs persistent storage
-
---
