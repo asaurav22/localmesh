@@ -17,10 +17,12 @@ async def _fetch_sidecar_data() -> dict:
     result = {"metrics": {}, "breakers": {}}
     try:
         async with httpx.AsyncClient(timeout=2.0) as client:
-            metrics_r  = await client.get(f"{SIDECAR_URL}/metrics")
+            metrics_r = await client.get(f"{SIDECAR_URL}/metrics")
             breakers_r = await client.get(f"{SIDECAR_URL}/breakers")
-            if metrics_r.status_code  == 200: result["metrics"]  = metrics_r.json()
-            if breakers_r.status_code == 200: result["breakers"] = breakers_r.json()
+            if metrics_r.status_code == 200:
+                result["metrics"] = metrics_r.json()
+            if breakers_r.status_code == 200:
+                result["breakers"] = breakers_r.json()
     except Exception as e:
         logger.warning(f"[DASHBOARD] Could not reach sidecar: {e}")
     return result
@@ -38,13 +40,13 @@ async def dashboard_json():
     Single endpoint that aggregates everything needed for a dashboard view.
     """
     registry_data = registry_store.get_dashboard_data()
-    sidecar_data  = await _fetch_sidecar_data()
+    sidecar_data = await _fetch_sidecar_data()
 
     return JSONResponse(content={
         "mesh_summary": registry_data["mesh_summary"],
-        "services":     registry_data["services"],
-        "metrics":      sidecar_data["metrics"],
-        "breakers":     sidecar_data["breakers"]
+        "services": registry_data["services"],
+        "metrics": sidecar_data["metrics"],
+        "breakers": sidecar_data["breakers"]
     })
 
 
@@ -55,12 +57,12 @@ async def dashboard_ui():
     Shows registry state, health, sidecar metrics, and circuit breakers.
     """
     registry_data = registry_store.get_dashboard_data()
-    sidecar_data  = await _fetch_sidecar_data()
+    sidecar_data = await _fetch_sidecar_data()
 
-    services  = registry_data["services"]
-    summary   = registry_data["mesh_summary"]
-    metrics   = sidecar_data["metrics"]
-    breakers  = sidecar_data["breakers"]
+    services = registry_data["services"]
+    summary = registry_data["mesh_summary"]
+    metrics = sidecar_data["metrics"]
+    breakers = sidecar_data["breakers"]
 
     # ── service rows ──────────────────────────────────────
     def health_color(health: str) -> str:
@@ -89,8 +91,8 @@ async def dashboard_ui():
     # ── metrics rows ──────────────────────────────────────
     metrics_rows = ""
     for svc, m in metrics.items():
-        err_color      = "#e74c3c" if m["error_rate"] > 0 else "#27ae60"
-        metrics_rows  += f"""
+        err_color = "#e74c3c" if m["error_rate"] > 0 else "#27ae60"
+        metrics_rows += f"""
         <tr>
             <td><strong>{svc}</strong></td>
             <td>{m['total']}</td>
