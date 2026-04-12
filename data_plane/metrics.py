@@ -5,6 +5,7 @@ from typing import Dict
 
 logger = logging.getLogger(__name__)
 
+
 class RouteMetrics:
     """
     Tracks per-upstream-service request metrics using a rolling
@@ -33,28 +34,28 @@ class RouteMetrics:
     @property
     def error_rate(self) -> float:
         return round(self.errors / self.total, 4) if self.total else 0.0
-    
+
     @property
     def p50(self) -> float:
         if not self.latencies:
             return 0.0
         s = sorted(self.latencies)
         return round(s[len(s) // 2], 3)
-    
+
     @property
     def p99(self) -> float:
         if not self.latencies:
             return 0.0
         s = sorted(self.latencies)
         return round(s[int(0.99 * len(s))], 3)
-    
+
     @property
     def p95(self) -> float:
         if not self.latencies:
             return 0.0
         s = sorted(self.latencies)
         return round(s[int(0.95 * len(s))], 3)
-    
+
     def to_dict(self) -> dict:
         return {
             "service": self.service_name,
@@ -66,7 +67,7 @@ class RouteMetrics:
             "p99_ms": self.p99,
             "window_size": len(self.latencies)
         }
-    
+
 
 # module-level registry - one RouteMetrics per upstream service
 route_metrics: Dict[str, RouteMetrics] = {}
