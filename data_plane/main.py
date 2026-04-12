@@ -1,3 +1,4 @@
+import time
 import logging
 import asyncio
 from contextlib import asynccontextmanager
@@ -9,6 +10,7 @@ from data_plane.routing_table import seed_route
 from data_plane.forwarder import forward
 from data_plane.syncer import sync_loop
 from data_plane import breaker_registry
+from data_plane.metrics import get_all_metrics, get_metrics
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,6 +40,12 @@ def get_breakers():
     all_breakers = breaker_registry.get_all_breakers()
     logger.info(f"[BREAKERS] Returning state for {len(all_breakers)} breaker(s)")
     return all_breakers
+
+
+@app.get("/metrics")
+def get_metrics_endpoint():
+    """Returns per-route metrics - total, errors, error_rate, p50, p95, p99"""
+    return get_all_metrics()
 
 
 @app.get("/dev/seed")
@@ -96,8 +104,14 @@ async def proxy(path: str, request: Request):
         )
 
     # step 3: forward + update breaker
+    metrics = get_metrics(service_name)
+    start = time.perf_counter()
     try:
         response: Response = await forward(request, real_url)
+        latency_ms = (time.perf_counter() - start) * 1000
+        success = response.status_code < 500
+
+        metrics.record(success=success, latency_ms=latency_ms)
 
         if response.status_code >= 500:
             cb.on_failure()
@@ -115,6 +129,8 @@ async def proxy(path: str, request: Request):
         return response
 
     except Exception as e:
+        latency_ms = (time.perf_counter() - start) * 1000
+        metrics.record(success=False, latency_ms=latency_ms)
         cb.on_failure()
         logger.error(f"[PROXY] Forward failed for '{service_name}': {e}")
         return JSONResponse(
