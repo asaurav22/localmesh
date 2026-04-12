@@ -135,6 +135,7 @@ GET localhost:8001/{service-name}/{path}
 # trigger a full chain call
 GET localhost:9001/orders/create
 ```
+<<<<<<< HEAD
 
 ---
 
@@ -171,3 +172,5 @@ Plane is what Consul or etcd does. The sidecar is what Envoy does. The
 circuit breaker is what Hystrix or Resilience4j does. The health monitor
 is what Kubernetes liveness probes do. The difference is LocalMesh does
 all of it in plain Python so every line of it is readable and learnable.
+=======
+>>>>>>> 8221961257c8e8dec45c7d4d378fcaf61d986c66
