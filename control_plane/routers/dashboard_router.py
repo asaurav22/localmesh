@@ -14,7 +14,7 @@ SIDECAR_URL = "http://localhost:8001"
 
 async def _fetch_sidecar_data() -> dict:
     """Fetch metrics and breaker state from sidecar — best effort."""
-    result = {"metrics": {}, "breakers": {}}
+    result: dict[str, dict] = {"metrics": {}, "breakers": {}}
     try:
         async with httpx.AsyncClient(timeout=2.0) as client:
             metrics_r = await client.get(f"{SIDECAR_URL}/metrics")
